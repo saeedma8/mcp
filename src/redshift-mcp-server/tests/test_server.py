@@ -600,8 +600,6 @@ class TestDescribeExecutionPlanTool:
             'planning_time_ms': 50,
             'plan_nodes': [
                 {
-                    'node_id': 1,
-                    'parent_node_id': None,
                     'level': 0,
                     'operation': 'Limit',
                     'cost_startup': 0.00,
@@ -610,8 +608,6 @@ class TestDescribeExecutionPlanTool:
                     'width': 27,
                 },
                 {
-                    'node_id': 2,
-                    'parent_node_id': 1,
                     'level': 1,
                     'operation': 'Seq Scan',
                     'cost_startup': 0.00,
@@ -622,7 +618,7 @@ class TestDescribeExecutionPlanTool:
                 },
             ],
             'table_designs': [],
-            'human_readable_plan': 'XN Limit  (cost=0.00..0.07 rows=5 width=27)\n  ->  XN Seq Scan on users  (cost=0.00..1.00 rows=100 width=27)',
+            'plan_text': '',
             'rule_based_suggestions': [
                 'Consider adding a SORTKEY on frequently filtered columns.'
             ],
@@ -640,8 +636,6 @@ class TestDescribeExecutionPlanTool:
         assert result.explained_query == 'SELECT * FROM users LIMIT 5'
         assert result.query_id == 'explain-123'
         assert result.planning_time_ms == 50
-        assert result.human_readable_plan is not None
-        assert 'XN Limit' in result.human_readable_plan
 
         assert all(isinstance(node, ExecutionPlanNode) for node in result.plan_nodes)
         assert result.plan_nodes[0].operation == 'Limit'

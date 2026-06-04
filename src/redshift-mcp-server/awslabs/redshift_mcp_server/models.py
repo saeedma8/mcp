@@ -232,41 +232,55 @@ class QueryResult(BaseSchema):
 class ExecutionPlanNode(BaseSchema):
     """Individual node in the query execution plan tree."""
 
-    node_id: int = Field(..., description='Unique node identifier')
-    parent_node_id: Optional[int] = Field(None, description='Parent node ID')
     level: int = Field(..., description='Tree depth (0 = root)')
     operation: str = Field(..., description='Operation type')
-    relation_name: Optional[str] = Field(None, description='Table or view name')
-    alias: Optional[str] = Field(None, description='Table alias')
-    prefix: Optional[str] = Field(None, description='Execution prefix (e.g., XN)')
-    distribution_type: Optional[str] = Field(None, description='Data distribution method')
-    cost_startup: Optional[float] = Field(None, description='Startup cost')
-    cost_total: Optional[float] = Field(None, description='Total cost')
-    rows: Optional[int] = Field(None, description='Estimated rows')
-    width: Optional[int] = Field(None, description='Row width in bytes')
-    scan_relid: Optional[int] = Field(None, description='Relation ID for scan operations')
-    join_type: Optional[str] = Field(None, description='Join type (Inner, Left, etc.)')
-    join_condition: Optional[str] = Field(None, description='Join condition')
-    filter_condition: Optional[str] = Field(None, description='Filter condition')
-    sort_key: Optional[str] = Field(None, description='Sort key info')
-    merge_key: Optional[str] = Field(None, description='Merge key info')
-    agg_strategy: Optional[str] = Field(None, description='Aggregation strategy')
-    data_movement: Optional[str] = Field(None, description='Data movement type')
-    output_columns: Optional[list[str]] = Field(None, description='Output columns')
+    relation_name: Optional[str] = Field(default=None, description='Table or view name')
+    alias: Optional[str] = Field(default=None, description='Table alias')
+    distribution_type: Optional[str] = Field(default=None, description='Data distribution method')
+    cost_startup: Optional[float] = Field(default=None, description='Startup cost')
+    cost_total: Optional[float] = Field(default=None, description='Total cost')
+    rows: Optional[int] = Field(default=None, description='Estimated rows')
+    width: Optional[int] = Field(default=None, description='Row width in bytes')
+    join_condition: Optional[str] = Field(default=None, description='Join condition')
+    join_filter: Optional[str] = Field(default=None, description='Join filter')
+    filter_condition: Optional[str] = Field(default=None, description='Filter condition')
+    index_condition: Optional[str] = Field(default=None, description='Index Scan index condition')
+    inner_dist_key: Optional[str] = Field(
+        default=None, description='Inner-side distribution key for redistribution joins'
+    )
+    outer_dist_key: Optional[str] = Field(
+        default=None, description='Outer-side distribution key for redistribution joins'
+    )
+    sort_key: Optional[str] = Field(default=None, description='Sort key info')
+    merge_key: Optional[str] = Field(default=None, description='Merge key info')
+    partition_key: Optional[str] = Field(
+        default=None, description='Window function PARTITION BY columns'
+    )
+    order_key: Optional[str] = Field(default=None, description='Window function ORDER BY columns')
+    agg_strategy: Optional[str] = Field(default=None, description='Aggregation strategy')
+    data_movement: Optional[str] = Field(default=None, description='Data movement type')
 
 
 class ExecutionPlan(BaseSchema):
-    """Result of an EXPLAIN VERBOSE query execution."""
+    """Result of an EXPLAIN query execution."""
 
     query_id: str = Field(..., description='Explain execution identifier')
     explained_query: str = Field(..., description='Original SQL query')
-    planning_time_ms: Optional[int] = Field(None, description='Planning time in milliseconds')
+    planning_time_ms: Optional[int] = Field(
+        default=None, description='Planning time in milliseconds'
+    )
+    plan_text: str = Field(
+        ...,
+        description='Raw EXPLAIN output text from the Redshift Data API, '
+        'with records joined by newlines',
+    )
     plan_nodes: list[ExecutionPlanNode] = Field(..., description='Execution plan nodes')
     table_designs: list[RedshiftTable] = Field(
         default_factory=list, description='Table design information for referenced tables'
     )
-    human_readable_plan: Optional[str] = Field(
-        None, description='Human-readable plan text (show only if fits on screen)'
+    notes: list[str] = Field(
+        default_factory=list,
+        description='Advisory annotations such as ambiguity warnings or parse errors',
     )
     rule_based_suggestions: list[str] = Field(
         default_factory=list,

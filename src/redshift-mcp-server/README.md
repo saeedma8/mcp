@@ -284,7 +284,7 @@ LIMIT 10;
   FROM tickit.sales s JOIN tickit.event e ON s.eventid = e.eventid
   WHERE s.saletime > '2008-06-01' ORDER BY s.pricepaid DESC LIMIT 50
 
-...auto-discovery of cluster (redshift-cluster-1), database (sample_data_dev), and tickit schema...
+...skipping auto-discovery logs (cluster: redshift-cluster-1, database: sample_data_dev, schema: tickit)...
 
 Here's the execution plan breakdown:
 
@@ -331,15 +331,15 @@ Table design details:
 | tickit.sales  | 344,912 | listid (KEY)     | dateid  |
 | tickit.event  | 17,596  | eventid (KEY)    | dateid  |
 
-Column planner statistics (from pg_stats):
+Column planner statistics (from pg_stats; negative n_distinct = fraction of rows that are distinct):
 
 | Column            | Correlation | n_distinct | Encoding | SORTKEY |
 |-------------------|-------------|------------|----------|---------|
 | sales.pricepaid   | 0.005       | 4,485      | az64     | —       |
-| sales.saletime    | 0.467       | ~49%       | az64     | —       |
+| sales.saletime    | 0.467       | -0.490     | az64     | —       |
 | sales.dateid      | 0.469       | 367        | none     | 1       |
 | sales.eventid     | 0.003       | 8,202      | az64     | —       |
-| event.eventid     | 0.003       | ~48%       | az64     | —       |
+| event.eventid     | 0.003       | -0.484     | az64     | —       |
 
 Key observations:
 
@@ -519,10 +519,12 @@ describe_execution_plan(cluster_identifier: str, database_name: str, sql: str) -
 - Structured plan nodes with costs, rows, and distribution info
 - Table design information (DISTKEY, SORTKEY, encoding) for referenced tables
 - Column planner statistics (n_distinct, null_frac, correlation, most_common_vals, histogram_bounds) for referenced columns
-- Human-readable plan text (summarized for large plans)
+- Raw EXPLAIN output text (records joined with newlines, exactly as Redshift emits them)
 - Rule-based performance optimization suggestions derived from plan analysis, table design, and column statistics
 
 **Permissions note**: Column planner statistics from `pg_stats` require SELECT privilege on the table for the statistics to be visible. Table activity statistics from `pg_stat_user_tables` are visible to all users regardless of permissions.
+
+**Response size note**: `plan_text` and `plan_nodes` carry the complete EXPLAIN output without truncation. For programmatic analysis prefer `plan_nodes` (typed, more compact); reach for `plan_text` only when rendering the plan to a human.
 
 ## Permissions
 

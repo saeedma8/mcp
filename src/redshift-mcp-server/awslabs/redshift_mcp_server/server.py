@@ -667,7 +667,7 @@ async def describe_execution_plan_tool(
 ) -> ExecutionPlan:
     """Get the execution plan for a SQL query without executing it.
 
-    Uses EXPLAIN VERBOSE to generate a structured execution plan for query optimization analysis.
+    Uses EXPLAIN to generate a structured execution plan for query optimization analysis.
     This tool provides insights into query performance without running the actual query.
 
     ## Usage Requirements
@@ -692,11 +692,12 @@ async def describe_execution_plan_tool(
 
     Returns an ExecutionPlan with:
     - query_id: Unique identifier for this explain execution.
-    - explained_query: The original SQL query.
+    - explained_query: The original SQL query, unchanged.
     - planning_time_ms: Time to generate the plan.
-    - plan_nodes: List of ExecutionPlanNode objects with hierarchy (node_id, parent_node_id, level, operation, distribution_type, costs, etc.).
+    - plan_text: Raw EXPLAIN output text (records joined with newlines, exactly as Redshift emits them).
+    - plan_nodes: List of ExecutionPlanNode objects (level + operation + costs + distribution_type + relation/alias + join/filter/sort/merge keys).
     - table_designs: List of table design info (DISTKEY, SORTKEY, encoding, column planner statistics) for referenced tables.
-    - human_readable_plan: Human-readable plan text from EXPLAIN output (summarized for large plans).
+    - notes: Advisory annotations (cross-database, not-found, ambiguity) for SQL references that need clarification.
     - rule_based_suggestions: Rule-based performance optimization suggestions derived from plan analysis, table design, and column statistics.
 
     ## Usage Tips
@@ -707,6 +708,7 @@ async def describe_execution_plan_tool(
     4. Suggest the user running ANALYZE on tables before checking execution plans for accurate cost estimates.
     5. Ask the user if they want to compare plans before and after schema changes to measure optimization impact.
     6. Use this tool to validate query performance before running expensive queries.
+    7. The full EXPLAIN output is returned without truncation. For programmatic analysis prefer plan_nodes (typed, more compact); reach for plan_text only when rendering the plan to a human.
 
     ## Interpretation Best Practices
 
@@ -717,7 +719,7 @@ async def describe_execution_plan_tool(
     5. High row estimates with Seq Scan suggest missing or ineffective SORTKEY.
     6. Review rule_based_suggestions for actionable optimization recommendations.
     7. Check table_designs to verify DISTKEY/SORTKEY alignment with query patterns.
-    8. Review column planner statistics (n_distinct, correlation) to identify data skew or poor zone map effectiveness.
+    8. Review column planner statistics (n_distinct, correlation, histogram_bounds) to identify data skew or poor zone map effectiveness.
 
     Note: Redshift does NOT support indexes. Focus on DISTKEY, SORTKEY, and compression optimization.
     """
